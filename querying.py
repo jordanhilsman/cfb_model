@@ -4,65 +4,147 @@ import pickle
 import numpy as np
 import pandas as pd
 import argparse
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score
 from transform_data import get_team_stats
 
 WKS_PER_YEAR: int = 16
 
-keys = ['winner', 'home', 'points', 'school', 'rushingTDs',
- 'puntReturnYards', 'puntReturnTDs', 'puntReturns', 'passingTDs', 'kickReturnYards',
- 'kickReturnTDs', 'kickReturns', 'kickingPoints', 'interceptionYards',
- 'interceptionTDs', 'passesIntercepted', 'fumblesRecovered',
- 'totalFumbles', 'tacklesForLoss', 'defensiveTDs', 'tackles', 'sacks', 'qbHurries',
- 'passesDeflected', 'interceptions', 'fumblesLost', 'turnovers', 'totalPenaltiesYards', 'yardsPerRushAttempt',
- 'rushingAttempts', 'rushingYards', 'yardsPerPass', 'completionAttempts',
- 'netPassingYards', 'totalYards', 'fourthDownEff', 'thirdDownEff', 'firstDowns']
+keys = [
+    "winner",
+    "home",
+    "points",
+    "school",
+    "rushingTDs",
+    "puntReturnYards",
+    "puntReturnTDs",
+    "puntReturns",
+    "passingTDs",
+    "kickReturnYards",
+    "kickReturnTDs",
+    "kickReturns",
+    "kickingPoints",
+    "interceptionYards",
+    "interceptionTDs",
+    "passesIntercepted",
+    "fumblesRecovered",
+    "totalFumbles",
+    "tacklesForLoss",
+    "defensiveTDs",
+    "tackles",
+    "sacks",
+    "qbHurries",
+    "passesDeflected",
+    "interceptions",
+    "fumblesLost",
+    "turnovers",
+    "totalPenaltiesYards",
+    "yardsPerRushAttempt",
+    "rushingAttempts",
+    "rushingYards",
+    "yardsPerPass",
+    "completionAttempts",
+    "netPassingYards",
+    "totalYards",
+    "fourthDownEff",
+    "thirdDownEff",
+    "firstDowns",
+]
 
-col_order = ['rushingTDs_away', 'puntReturnYards_away', 'puntReturnTDs_away',
-       'puntReturns_away', 'passingTDs_away', 'kickReturnYards_away',
-       'kickReturnTDs_away', 'kickReturns_away', 'kickingPoints_away',
-       'interceptionYards_away', 'interceptionTDs_away',
-       'passesIntercepted_away', 'fumblesRecovered_away', 'totalFumbles_away',
-       'tacklesForLoss_away', 'defensiveTDs_away', 'tackles_away',
-       'sacks_away', 'qbHurries_away', 'passesDeflected_away',
-       'interceptions_away', 'fumblesLost_away', 'turnovers_away',
-       'totalPenaltiesYards_away', 'yardsPerRushAttempt_away',
-       'rushingAttempts_away', 'rushingYards_away', 'yardsPerPass_away',
-       'completionAttempts_away', 'netPassingYards_away', 'totalYards_away',
-       'fourthDownEff_away', 'thirdDownEff_away', 'firstDowns_away',
-       'rushingTDs', 'puntReturnYards', 'puntReturnTDs', 'puntReturns',
-       'passingTDs', 'kickReturnYards', 'kickReturnTDs', 'kickReturns',
-       'kickingPoints', 'interceptionYards', 'interceptionTDs',
-       'passesIntercepted', 'fumblesRecovered', 'totalFumbles',
-       'tacklesForLoss', 'defensiveTDs', 'tackles', 'sacks', 'qbHurries',
-       'passesDeflected', 'interceptions', 'fumblesLost', 'turnovers',
-       'totalPenaltiesYards', 'yardsPerRushAttempt', 'rushingAttempts',
-       'rushingYards', 'yardsPerPass', 'completionAttempts', 'netPassingYards',
-       'totalYards', 'fourthDownEff', 'thirdDownEff', 'firstDowns']
+col_order = [
+    "rushingTDs_away",
+    "puntReturnYards_away",
+    "puntReturnTDs_away",
+    "puntReturns_away",
+    "passingTDs_away",
+    "kickReturnYards_away",
+    "kickReturnTDs_away",
+    "kickReturns_away",
+    "kickingPoints_away",
+    "interceptionYards_away",
+    "interceptionTDs_away",
+    "passesIntercepted_away",
+    "fumblesRecovered_away",
+    "totalFumbles_away",
+    "tacklesForLoss_away",
+    "defensiveTDs_away",
+    "tackles_away",
+    "sacks_away",
+    "qbHurries_away",
+    "passesDeflected_away",
+    "interceptions_away",
+    "fumblesLost_away",
+    "turnovers_away",
+    "totalPenaltiesYards_away",
+    "yardsPerRushAttempt_away",
+    "rushingAttempts_away",
+    "rushingYards_away",
+    "yardsPerPass_away",
+    "completionAttempts_away",
+    "netPassingYards_away",
+    "totalYards_away",
+    "fourthDownEff_away",
+    "thirdDownEff_away",
+    "firstDowns_away",
+    "rushingTDs",
+    "puntReturnYards",
+    "puntReturnTDs",
+    "puntReturns",
+    "passingTDs",
+    "kickReturnYards",
+    "kickReturnTDs",
+    "kickReturns",
+    "kickingPoints",
+    "interceptionYards",
+    "interceptionTDs",
+    "passesIntercepted",
+    "fumblesRecovered",
+    "totalFumbles",
+    "tacklesForLoss",
+    "defensiveTDs",
+    "tackles",
+    "sacks",
+    "qbHurries",
+    "passesDeflected",
+    "interceptions",
+    "fumblesLost",
+    "turnovers",
+    "totalPenaltiesYards",
+    "yardsPerRushAttempt",
+    "rushingAttempts",
+    "rushingYards",
+    "yardsPerPass",
+    "completionAttempts",
+    "netPassingYards",
+    "totalYards",
+    "fourthDownEff",
+    "thirdDownEff",
+    "firstDowns",
+]
 
 stat_keys = keys[4:]
 
 configuration = cfbd.Configuration()
-configuration.api_key_prefix['Authorization'] = 'Bearer'
-configuration.api_key['Authorization'] = os.getenv("CFBD_API_KEY")
+configuration.api_key_prefix["Authorization"] = "Bearer"
+configuration.api_key["Authorization"] = os.getenv("CFBD_API_KEY")
 
 api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
 
+
 def parse_args() -> argparse.Namespace:
 
-    parser = argparse.ArgumentParser("Arguments for matchup configurations, home team, away team, year of matchup")
+    parser = argparse.ArgumentParser(
+        "Arguments for matchup configurations, home team, away team, year of matchup"
+    )
+    parser.add_argument("--home_team", type=str, help="Home team for matchup")
+    parser.add_argument("--away_team", type=str, help="Away team for matchup")
+    parser.add_argument("--year", type=int, help="Year of matchup")
     parser.add_argument(
-            "--home_team", type=str, help="Home team for matchup")
-    parser.add_argument(
-            "--away_team", type=str, help="Away team for matchup")
-    parser.add_argument(
-            "--year", type=int, help="Year of matchup")
-    parser.add_argument(
-            "--allow_rematch", action='store_true', help="Consider previous matchup of the teams, defaults false")
-    parser.add_argument(
-            "--save", action="store_true", help='To save .csv of results or not')
+        "--allow_rematch",
+        action="store_true",
+        help="Consider previous matchup of the teams, defaults false",
+    )
+    parser.add_argument("--save", action="store_true", help="To save .csv of results or not")
     return parser.parse_args()
+
 
 args = parse_args()
 
@@ -71,8 +153,8 @@ away_team = args.away_team
 yr = args.year
 
 save_name = f"{home_team}___{away_team}___{yr}.csv"
-home_team = home_team.replace('_', ' ')
-away_team = away_team.replace('_', ' ')
+home_team = home_team.replace("_", " ")
+away_team = away_team.replace("_", " ")
 
 teams = [home_team, away_team]
 
@@ -92,7 +174,7 @@ for team in teams:
         if len(games) >= 1:
             game_teams = games[0].teams
             if args.allow_rematch:
-                team_names = set([tm['school'] for tm in game_teams])
+                team_names = set([tm["school"] for tm in game_teams])
                 if team_names == team_set:
                     continue
                 else:
@@ -114,30 +196,30 @@ df_away = pd.DataFrame.from_dict(dict_away)
 n_row_home = len(df_home)
 n_row_away = len(df_away)
 
-df_home['ID'] = np.repeat(range(1, n_row_home//2 + 1), 2)
-df_away['ID'] = np.repeat(range(1, n_row_away//2 + 1), 2)
+df_home["ID"] = np.repeat(range(1, n_row_home // 2 + 1), 2)
+df_away["ID"] = np.repeat(range(1, n_row_away // 2 + 1), 2)
 
-df_home = df_home[df_home['school'] == home_team]
-df_away = df_away[df_away['school'] == away_team]
+df_home = df_home[df_home["school"] == home_team]
+df_away = df_away[df_away["school"] == away_team]
 
-df_home.drop(columns=['school', 'points', 'winner', 'ID', 'home'], inplace=True)
-df_away.drop(columns=['school', 'points', 'winner', 'ID', 'home'], inplace=True)
+df_home.drop(columns=["school", "points", "winner", "ID", "home"], inplace=True)
+df_away.drop(columns=["school", "points", "winner", "ID", "home"], inplace=True)
 
-df_home.loc['mean'] = df_home.mean()
-df_away.loc['mean'] = df_away.mean()
+df_home.loc["mean"] = df_home.mean()
+df_away.loc["mean"] = df_away.mean()
 
 df_away.columns = [f"{col}_away" for col in df_away.columns]
 
-df_home = df_home.loc['mean'].to_frame().T
-df_away = df_away.loc['mean'].to_frame().T
+df_home = df_home.loc["mean"].to_frame().T
+df_away = df_away.loc["mean"].to_frame().T
 
-df = pd.concat([df_home, df_away], axis = 1)
+df = pd.concat([df_home, df_away], axis=1)
 df = df.reindex(columns=col_order)
 
 if args.save:
     df.to_csv(save_name, index=False)
 
-with open('lr_model.pkl', 'rb') as f:
+with open("lr_model.pkl", "rb") as f:
     lr = pickle.load(f)
 
 probs = lr.predict_proba(df)
