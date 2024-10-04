@@ -72,6 +72,7 @@ yr = args.year
 
 save_name = f"{home_team}___{away_team}___{yr}.csv"
 home_team = home_team.replace('_', ' ')
+away_team = away_team.replace('_', ' ')
 
 teams = [home_team, away_team]
 
@@ -139,4 +140,9 @@ if args.save:
 with open('lr_model.pkl', 'rb') as f:
     lr = pickle.load(f)
 
-print(lr.predict_proba(df))
+probs = lr.predict_proba(df)
+home_team_lose = probs[0][0] * 100
+home_team_win = probs[0][1] * 100
+
+print(f"The probability the Home team ({home_team}) wins is: {home_team_win:2f}%")
+print(f"The probability the Away Team ({away_team}) wins is: {home_team_lose:2f}%")
