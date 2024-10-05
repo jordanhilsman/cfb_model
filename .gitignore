@@ -13,6 +13,7 @@
 [Ss]cripts
 pyvenv.cfg
 .venv
+/game_predictions/*.csv
 pip-selfcheck.json
 
 ### Vim ###
@@ -35,6 +36,5 @@ Sessionx.vim
 tags
 # Persistent undo
 [._]*.un~
-
 # End of https://www.toptal.com/developers/gitignore/api/venv,vim
 

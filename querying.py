@@ -216,15 +216,19 @@ df_away = df_away.loc["mean"].to_frame().T
 df = pd.concat([df_home, df_away], axis=1)
 df = df.reindex(columns=col_order)
 
-if args.save:
-    df.to_csv(save_name, index=False)
-
 with open("lr_model.pkl", "rb") as f:
     lr = pickle.load(f)
 
 probs = lr.predict_proba(df)
 home_team_lose = probs[0][0] * 100
 home_team_win = probs[0][1] * 100
+
+df['home_win_proba'] = home_team_win
+df['home_lose_proba'] = home_team_lose
+
+if args.save:
+    df.to_csv(f"./game_predictions/{save_name}", index=False)
+
 
 print(f"The probability the Home team ({home_team}) wins is: {home_team_win:2f}%")
 print(f"The probability the Away Team ({away_team}) wins is: {home_team_lose:2f}%")
