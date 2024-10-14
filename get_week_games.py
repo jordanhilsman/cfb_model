@@ -28,7 +28,7 @@ print("Getting moneyline information for games...")
 for file in tqdm(os.listdir('./game_predictions/')):
     df = pd.read_csv(f"./game_predictions/{file}")
     home_team = file.split('___')[0]
-    lines = api_instance.get_lines(year=2024, week=6, team=home_team)
+    lines = betting_api.get_lines(year=2024, week=7, team=home_team)
     hml = lines[0].lines[0].home_moneyline
     aml = lines[0].lines[0].away_moneyline
     df['home_ml'] = hml
