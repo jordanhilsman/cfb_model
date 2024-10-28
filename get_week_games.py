@@ -3,6 +3,7 @@ import os
 import subprocess
 import pandas as pd
 
+from datetime import datetime
 from tqdm import tqdm
 
 configuration = cfbd.Configuration()
@@ -30,16 +31,21 @@ for file in tqdm(os.listdir('./game_predictions/')):
     df = pd.read_csv(f"./game_predictions/{file}")
     home_team, away_team, _ = file.split('___')[0]
     lines = betting_api.get_lines(year=2024, week=week_of_choice, team=home_team)
-    if len(lines[0].lines) != 0:
+    if len(lines) != 0:
         hml = lines[0].lines[0].home_moneyline
         aml = lines[0].lines[0].away_moneyline
+        date_time_str = lines[0].start_date
+        dt = datetime.datetime.fromisoformat(date_time_str.replace('Z', '+00:00'))
     else:
         hml = 0
         aml = 0
+        dt = 0
+
     df['home_ml'] = hml
     df['away_ml'] = aml
     df['home_team'] = home_team
     df['away_team'] = away_team
+    df['start_date_time'] = dt
     df_j = pd.concat([df_j, df])
     df.to_csv(f"./game_predictions/{file}", index=False)
 
