@@ -25,12 +25,22 @@ for game in tqdm(games, total=len(games)):
                     "--year", "2024", "--save"])
 
 print("Getting moneyline information for games...")
+df_j = pd.DataFrame()
 for file in tqdm(os.listdir('./game_predictions/')):
     df = pd.read_csv(f"./game_predictions/{file}")
-    home_team = file.split('___')[0]
-    lines = betting_api.get_lines(year=2024, week=7, team=home_team)
-    hml = lines[0].lines[0].home_moneyline
-    aml = lines[0].lines[0].away_moneyline
+    home_team, away_team, _ = file.split('___')[0]
+    lines = betting_api.get_lines(year=2024, week=week_of_choice, team=home_team)
+    if len(lines[0].lines) != 0):
+        hml = lines[0].lines[0].home_moneyline
+        aml = lines[0].lines[0].away_moneyline
+    else:
+        hml = 0
+        aml = 0
     df['home_ml'] = hml
     df['away_ml'] = aml
+    df['home_team'] = home_team
+    df['away_team'] = away_team
+    df_j = pd.concat([df_j, df])
     df.to_csv(f"./game_predictions/{file}", index=False)
+
+df_j.to_csv(f"week_{week_of_choice}.csv", index=False)
