@@ -30,7 +30,7 @@ for file in tqdm(os.listdir('./game_predictions/')):
     df = pd.read_csv(f"./game_predictions/{file}")
     home_team, away_team, _ = file.split('___')[0]
     lines = betting_api.get_lines(year=2024, week=week_of_choice, team=home_team)
-    if len(lines[0].lines) != 0):
+    if len(lines[0].lines) != 0:
         hml = lines[0].lines[0].home_moneyline
         aml = lines[0].lines[0].away_moneyline
     else:
