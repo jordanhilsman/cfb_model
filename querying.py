@@ -223,8 +223,8 @@ probs = lr.predict_proba(df)
 home_team_lose = probs[0][0] * 100
 home_team_win = probs[0][1] * 100
 
-df['home_win_proba'] = home_team_win
-df['home_lose_proba'] = home_team_lose
+df["home_win_proba"] = home_team_win
+df["home_lose_proba"] = home_team_lose
 
 if args.save:
     df.to_csv(f"./game_predictions/{save_name}", index=False)
