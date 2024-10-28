@@ -45,7 +45,7 @@ for file in tqdm(os.listdir("./game_predictions/")):
             hml = lines[0].lines[0].home_moneyline
             aml = lines[0].lines[0].away_moneyline
             date_time_str = lines[0].start_date
-            dt = datetime.datetime.fromisoformat(date_time_str.replace("Z", "+00:00"))
+            dt = datetime.fromisoformat(date_time_str.replace("Z", "+00:00"))
         else:
             hml = 0
             aml = 0
