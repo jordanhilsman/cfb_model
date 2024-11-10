@@ -143,6 +143,7 @@ def parse_args() -> argparse.Namespace:
         help="Consider previous matchup of the teams, defaults false",
     )
     parser.add_argument("--save", action="store_true", help="To save .csv of results or not")
+    parser.add_argument("--week", type=int, default=16)
     return parser.parse_args()
 
 
@@ -151,6 +152,7 @@ args = parse_args()
 home_team = args.home_team
 away_team = args.away_team
 yr = args.year
+weeks_to_query = args.week
 
 save_name = f"{home_team}___{away_team}___{yr}.csv"
 home_team = home_team.replace("_", " ")
@@ -169,8 +171,11 @@ if args.allow_rematch:
     team_set = set([away_team, home_team])
 
 for team in teams:
-    for wk in range(1, WKS_PER_YEAR):
-        games = api_instance.get_team_game_stats(year=yr, week=wk, team=team)
+    for wk in range(1, weeks_to_query):
+        if weeks_to_query != 1:
+            games = api_instance.get_team_game_stats(year=yr, week=wk, team=team)
+        else:
+            games = api_instance.get_team_game_stats(year=(yr - 1), week=16, team=team)
         if len(games) >= 1:
             game_teams = games[0].teams
             if args.allow_rematch:
@@ -216,7 +221,7 @@ df_away = df_away.loc["mean"].to_frame().T
 df = pd.concat([df_home, df_away], axis=1)
 df = df.reindex(columns=col_order)
 
-with open("lr_model.pkl", "rb") as f:
+with open("./models/lr_model.pkl", "rb") as f:
     lr = pickle.load(f)
 
 probs = lr.predict_proba(df)
@@ -227,7 +232,7 @@ df["home_win_proba"] = home_team_win
 df["home_lose_proba"] = home_team_lose
 
 if args.save:
-    df.to_csv(f"./game_predictions/{save_name}", index=False)
+    df.to_csv(f"./game_predictions/week_{weeks_to_query}/{save_name}", index=False)
 
 
 print(f"The probability the Home team ({home_team}) wins is: {home_team_win:2f}%")

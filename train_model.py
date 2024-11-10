@@ -3,8 +3,27 @@ import numpy as np
 import pickle
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score
-from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC, NuSVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 import os
+
+classifiers = {
+    "knn": KNeighborsClassifier(3),
+    "svm": SVC(kernel="rbf", C=0.025, probability=True),
+    "nusvm": NuSVC(probability=True),
+    "decisiontree": DecisionTreeClassifier(),
+    "rf": RandomForestClassifier(),
+    "adaboost": AdaBoostClassifier(),
+    "gradientboost": GradientBoostingClassifier(),
+    "naivebayes": GaussianNB(),
+    "lda": LinearDiscriminantAnalysis(),
+    "qda": QuadraticDiscriminantAnalysis(),
+}
 
 
 def prep_data():
@@ -56,20 +75,22 @@ def main() -> None:
     X = df.drop(columns="DID_HOME_WIN")
     y = df["DID_HOME_WIN"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1337)
-    lr = LogisticRegression(max_iter=10000)
-    lr.fit(X_train, y_train)
-    y_pred = lr.predict(X_test)
-    accuracy = accuracy_score(y_pred, y_test)
-    precision = precision_score(y_pred, y_test)
-    f1 = f1_score(y_pred, y_test)
-    recall = recall_score(y_pred, y_test)
-    print(f"Test Accuracy: {accuracy}")
-    print(f"Test Precision: {precision}")
-    print(f"Test F1: {f1}")
-    print(f"Test Recall: {recall}")
-    with open("lr_model.pkl", "wb") as f:
-        pickle.dump(lr, f)
-    print("Saved model!")
+    for name, clf in classifiers.items():
+        print(f"Training {name} model.")
+        lr = clf
+        lr.fit(X_train, y_train)
+        y_pred = lr.predict(X_test)
+        accuracy = accuracy_score(y_pred, y_test)
+        precision = precision_score(y_pred, y_test)
+        f1 = f1_score(y_pred, y_test)
+        recall = recall_score(y_pred, y_test)
+        print(f"Test Accuracy: {accuracy}")
+        print(f"Test Precision: {precision}")
+        print(f"Test F1: {f1}")
+        print(f"Test Recall: {recall}")
+        with open(f"{name}_model.pkl", "wb") as f:
+            pickle.dump(lr, f)
+        print(f"Saved {name} model!")
 
 
 if __name__ == "__main__":

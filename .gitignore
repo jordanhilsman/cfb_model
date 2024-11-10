@@ -13,7 +13,10 @@
 [Ss]cripts
 pyvenv.cfg
 .venv
-/game_predictions/*.csv
+/game_predictions/*
+/models/*.pkl
+/season_data/*.csv
+/season_data/*.txt
 pip-selfcheck.json
 
 ### Vim ###
