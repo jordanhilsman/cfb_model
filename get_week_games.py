@@ -53,15 +53,16 @@ for file in tqdm(os.listdir(f"./game_predictions/week_{week_of_choice}")):
         df = pd.read_csv(f"./game_predictions/week_{week_of_choice}/{file}")
         home_team, away_team, _ = file.split("___")
         lines = betting_api.get_lines(year=2024, week=week_of_choice, team=home_team)
-        if len(lines) > 0:
+        print(home_team)
+        if (len(lines) == 0) | (lines[0].lines == []):
+            hml = 0
+            aml = 0
+            dt = 0
+        else:
             hml = lines[0].lines[0].home_moneyline
             aml = lines[0].lines[0].away_moneyline
             date_time_str = lines[0].start_date
             dt = datetime.fromisoformat(date_time_str.replace("Z", "+00:00"))
-        else:
-            hml = 0
-            aml = 0
-            dt = 0
 
         df["home_ml"] = hml
         df["away_ml"] = aml

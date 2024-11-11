@@ -1,6 +1,7 @@
 import os
 import json
 import pickle
+import itertools
 
 import pandas as pd
 
@@ -81,8 +82,16 @@ models = [m for m in models if ".pkl" in m]
 week_files = os.listdir()
 week_files = [f for f in week_files if ".csv" in f]
 
-ensemble_models = ["naivebayes", "lr", "lda"]
+ensemble_models = ["svm", "lr", "lda"]
 
+all_models = ['gradientboost', 'knn', 'lda', 'lr',
+              'nusvm', 'rf', 'svm']
+
+permutations_of_3 = [list(comb) for comb in itertools.combinations(all_models, 3)]
+indexed_perms = {index: comb for index, comb in enumerate(permutations_of_3)}
+
+with open('all_permutations.json', 'w') as f:
+    json.dump(indexed_perms, f, indent=4)
 
 for file in week_files:
     if "Modeling" in file:
@@ -116,24 +125,26 @@ for file in week_files:
             if checker == row["TRUE_WINNER"]:
                 counter += 1
         model_perf[name] = (counter / len(df)) * 100
-    ensemble_prediction = []
-    ensemble_counter = 0
-    for _, row in df.iterrows():
-        home_win_prob = 0
-        for em in ensemble_models:
-            home_win_prob += row[f"{em}_ht_win"]
-        if home_win_prob > 1.5:
-            ep = row["home_team"]
-        else:
-            ep = row["away_team"]
-        ensemble_prediction.append(ep)
-        if ep == row["TRUE_WINNER"]:
-            ensemble_counter += 1
-    model_perf["ensemble"] = (ensemble_counter / len(df)) * 100
-    df["ensemble_prediction"] = ensemble_prediction
+    for idx, perm in indexed_perms.items():
+        print(f"Getting predictions for ensemble {idx}")
+        ensemble_prediction = []
+        ensemble_counter = 0
+        for _, row in df.iterrows():
+            home_win_prob = 0
+            for em in perm:
+                home_win_prob += row[f"{em}_ht_win"]
+            if home_win_prob > 1.5:
+                ep = row["home_team"]
+            else:
+                ep = row["away_team"]
+            ensemble_prediction.append(ep)
+            if ep == row["TRUE_WINNER"]:
+                ensemble_counter += 1
+        model_perf[f"ensemble_{idx}"] = (ensemble_counter / len(df)) * 100
+#        df[f"ensemble_prediction_{idx}"] = ensemble_prediction
 
-    with open(f"performance_{saver}.txt", "w") as f:
-        json.dump(model_perf, f, indent=4)
+        with open(f"performance_{saver}.txt", "w") as f:
+            json.dump(model_perf, f, indent=4)
 
     df.to_csv(file, index=False)
 

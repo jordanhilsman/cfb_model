@@ -13,15 +13,15 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 import os
 
 classifiers = {
-    "knn": KNeighborsClassifier(3),
+    "knn": KNeighborsClassifier(2),
     "svm": SVC(kernel="rbf", C=0.025, probability=True),
     "nusvm": NuSVC(probability=True),
-    "decisiontree": DecisionTreeClassifier(),
+    "decisiontree": DecisionTreeClassifier(max_depth=20, min_samples_split=10, min_samples_leaf=4),
     "rf": RandomForestClassifier(),
     "adaboost": AdaBoostClassifier(),
     "gradientboost": GradientBoostingClassifier(),
     "naivebayes": GaussianNB(),
-    "lda": LinearDiscriminantAnalysis(),
+    "lda": LinearDiscriminantAnalysis(solver='lsqr'),
     "qda": QuadraticDiscriminantAnalysis(),
 }
 
@@ -88,7 +88,7 @@ def main() -> None:
         print(f"Test Precision: {precision}")
         print(f"Test F1: {f1}")
         print(f"Test Recall: {recall}")
-        with open(f"{name}_model.pkl", "wb") as f:
+        with open(f"./models/{name}_model.pkl", "wb") as f:
             pickle.dump(lr, f)
         print(f"Saved {name} model!")
 

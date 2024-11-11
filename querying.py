@@ -221,12 +221,22 @@ df_away = df_away.loc["mean"].to_frame().T
 df = pd.concat([df_home, df_away], axis=1)
 df = df.reindex(columns=col_order)
 
-with open("./models/lr_model.pkl", "rb") as f:
-    lr = pickle.load(f)
+ensemble_models = ["gradientboost", "lda", "lr"]
 
-probs = lr.predict_proba(df)
-home_team_lose = probs[0][0] * 100
-home_team_win = probs[0][1] * 100
+home_team_win = 0
+home_team_lose = 0
+
+for em in ensemble_models:
+    with open(f"./models/{em}_model.pkl", "rb") as f:
+        lr = pickle.load(f)
+    probs = lr.predict_proba(df)
+    home_team_win += probs[0][1]
+    home_team_lose += probs[0][0]
+
+home_team_win = home_team_win / 3
+home_team_lose = home_team_lose / 3
+home_team_lose = home_team_lose * 100
+home_team_win = home_team_win * 100
 
 df["home_win_proba"] = home_team_win
 df["home_lose_proba"] = home_team_lose
