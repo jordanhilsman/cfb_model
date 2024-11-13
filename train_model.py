@@ -12,86 +12,89 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 import os
 
-classifiers = {
-    "knn": KNeighborsClassifier(2),
-    "svm": SVC(kernel="rbf", C=0.025, probability=True),
-    "nusvm": NuSVC(probability=True),
-    "decisiontree": DecisionTreeClassifier(max_depth=20, min_samples_split=10, min_samples_leaf=4),
-    "rf": RandomForestClassifier(),
-    "adaboost": AdaBoostClassifier(),
-    "gradientboost": GradientBoostingClassifier(),
-    "naivebayes": GaussianNB(),
-    "lda": LinearDiscriminantAnalysis(solver='lsqr'),
-    "qda": QuadraticDiscriminantAnalysis(),
-}
+
+class DataPreparer:
+    def __init__(self, raw_data_path: str, processed_data_path: str):
+        self.raw_data_path = raw_data_path
+        self.processed_data_path = processed_data_path
+
+    def prep_data(self) -> None:
+        raw_data = pd.read_csv(self.raw_data_path)
+        n_rows = len(raw_data)
+        raw_data['ID'] = np.repeat(range(1, n_rows // 2 + 1), 2)
 
 
-def prep_data():
-    raw_data = pd.read_csv("CFB_GAME_DATA_2013_2023.csv")
+        df_home = raw_data[raw_data["home"] == 1]
+        df_away = raw_data[raw_data["home"] == 0]
 
-    n_rows = len(raw_data)
+        df_home['DID_HOME_WIN'] = [1 if (row['winner'] == 1 and row['home'] == 1) else 0 for _, row in df_home.iterrows()]
 
-    raw_data["ID"] = np.repeat(range(1, n_rows // 2 + 1), 2)
 
-    df_home = raw_data[raw_data["home"] == 1]
-    df_away = raw_data[raw_data["home"] == 0]
+        df_away.columns = [f"{col}_away" for col in df_away.columns]
+        df_away["ID"] = df_away["ID_away"]
 
-    lister = []
-    for _, row in df_home.iterrows():
-        if (row["winner"] == 1) & (row["home"] == 1):
-            lister.append(1)
-        else:
-            lister.append(0)
+        df_merged = pd.merge(df_away, df_home, on="ID").drop(
+                columns = ["winner_away", "home_away", "ID_away", "winner", "points_away",
+                           "school_away", "ID", "home", "points", "school"])
 
-    df_home["DID_HOME_WIN"] = lister
+        df_merged.to_csv(self.processed_data_path, index=False)
 
-    df_away.columns = [f"{col}_away" for col in df_away.columns]
-    df_away["ID"] = df_away["ID_away"]
+    def get_data(self) -> pd.DataFrame:
+        if not os.path.exists(self.processed_data_path):
+            self.prep_data
+        return pd.read_csv(self.processed_data_path)
 
-    df_merged = pd.merge(df_away, df_home, on="ID")
+class ModelTrainer:
+    def __init__(self, classifiers:dict, output_dir:str):
+        self.classifiers = classifiers
+        self.output_dir = output_dir
+        os.makedirs(self.output_dir, exist_ok=True)
 
-    df_merged.drop(
-        columns=[
-            "winner_away",
-            "home_away",
-            "ID_away",
-            "winner",
-            "points_away",
-            "school_away",
-            "ID",
-            "home",
-            "points",
-            "school",
-        ],
-        inplace=True,
-    )
-    df_merged.to_csv("processed_training_data.csv", index=False)
+    def train_and_evaluate(self, X_train, X_test, y_train, y_test) -> None:
+        for name, model in self.classifiers.items():
+            print(f"Training {name} model")
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
+
+            metrics = {
+                    "accuracy" : accuracy_score(y_test, y_pred),
+                    "precision" : precision_score(y_test, y_pred),
+                    "f1" : f1_score(y_test, y_pred),
+                    "recall" : recall_score(y_test, y_pred),
+                }
+            for metric_name, value in metrics.items():
+                print(f"{metric_name.capitalize()}: {value:.4f}")
+
+            model_path = os.path.join(self.output_dir, f"{name}_model.pkl")
+            with open(model_path, "wb") as f:
+                pickle.dump(model, f)
+            print(f"Saved {name} model at {model_path}.")
+
+
+
 
 
 def main() -> None:
-    if "processed_training_data.csv" not in os.listdir():
-        prep_data()
-    df = pd.read_csv("processed_training_data.csv")
-    X = df.drop(columns="DID_HOME_WIN")
-    y = df["DID_HOME_WIN"]
+    data_preparer = DataPreparer("./unprocessed_data/CFB_GAME_DATA_2013_2023.csv",
+                                 "processed_training_data.csv")
+    data = data_preparer.get_data()
+    X = data.drop(columns="DID_HOME_WIN")
+    y = data["DID_HOME_WIN"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1337)
-    for name, clf in classifiers.items():
-        print(f"Training {name} model.")
-        lr = clf
-        lr.fit(X_train, y_train)
-        y_pred = lr.predict(X_test)
-        accuracy = accuracy_score(y_pred, y_test)
-        precision = precision_score(y_pred, y_test)
-        f1 = f1_score(y_pred, y_test)
-        recall = recall_score(y_pred, y_test)
-        print(f"Test Accuracy: {accuracy}")
-        print(f"Test Precision: {precision}")
-        print(f"Test F1: {f1}")
-        print(f"Test Recall: {recall}")
-        with open(f"./models/{name}_model.pkl", "wb") as f:
-            pickle.dump(lr, f)
-        print(f"Saved {name} model!")
-
+    classifiers = {
+        "knn": KNeighborsClassifier(2),
+        "svm": SVC(kernel="rbf", C=0.025, probability=True),
+        "nusvm": NuSVC(probability=True),
+        "decisiontree": DecisionTreeClassifier(max_depth=20, min_samples_split=10, min_samples_leaf=4),
+        "rf": RandomForestClassifier(),
+        "adaboost": AdaBoostClassifier(),
+        "gradientboost": GradientBoostingClassifier(),
+        "naivebayes": GaussianNB(),
+        "lda": LinearDiscriminantAnalysis(solver='lsqr'),
+        "qda": QuadraticDiscriminantAnalysis(),
+        }
+    trainer = ModelTrainer(classifiers, output_dir="./models")
+    trainer.train_and_evaluate(X_train, X_test, y_train, y_test)
 
 if __name__ == "__main__":
     main()
