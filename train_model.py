@@ -23,12 +23,10 @@ class DataPreparer:
         n_rows = len(raw_data)
         raw_data['ID'] = np.repeat(range(1, n_rows // 2 + 1), 2)
 
-
         df_home = raw_data[raw_data["home"] == 1]
         df_away = raw_data[raw_data["home"] == 0]
 
         df_home['DID_HOME_WIN'] = [1 if (row['winner'] == 1 and row['home'] == 1) else 0 for _, row in df_home.iterrows()]
-
 
         df_away.columns = [f"{col}_away" for col in df_away.columns]
         df_away["ID"] = df_away["ID_away"]

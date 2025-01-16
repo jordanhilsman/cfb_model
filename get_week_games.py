@@ -11,9 +11,7 @@ configuration = cfbd.Configuration()
 configuration.api_key["Authorization"] = os.getenv("CFBD_API_KEY")
 configuration.api_key_prefix["Authorization"] = "Bearer"
 api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
-
 betting_api = cfbd.BettingApi(cfbd.ApiClient(configuration))
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
