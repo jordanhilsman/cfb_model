@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 import numpy as np
 import pickle
 from sklearn.model_selection import train_test_split
@@ -10,8 +11,6 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, Gradien
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-import os
-
 
 class DataPreparer:
     def __init__(self, raw_data_path: str, processed_data_path: str):
