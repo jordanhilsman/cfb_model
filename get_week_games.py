@@ -18,7 +18,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--week", type=int, required=True)
     return parser.parse_args()
 
-
 args = parse_args()
 week_of_choice = args.week
 
