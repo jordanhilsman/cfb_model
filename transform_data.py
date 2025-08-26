@@ -11,11 +11,11 @@ fields_of_interest = ["fourthDownEff", "thirdDownEff", "totalPenaltiesYards", "c
 # 1 if team1 == home, 0 if team2 == home
 # 1 if team1 wins, 0 if team2 wins
 
-keys = [
+KEYS: list = [
     "winner",
     "home",
     "points",
-    "school",
+    "team",
     "rushingTDs",
     "puntReturnYards",
     "puntReturnTDs",
@@ -52,13 +52,13 @@ keys = [
     "firstDowns",
 ]
 
-stat_keys = keys[4:]
+stat_keys = KEYS[4:]
 stats_dictionary = {}
-for key in keys:
+for key in KEYS:
     stats_dictionary[key] = []
 
 
-def get_team_stats(teams, stats_dictionary):
+def get_team_stats(teams, stats_dictionary=stats_dictionary):
     team1 = teams[0].to_dict()
     team2 = teams[1].to_dict()
     for team in teams:
@@ -68,23 +68,23 @@ def get_team_stats(teams, stats_dictionary):
                 stats_dictionary["winner"].append(1)
             else:
                 stats_dictionary["winner"].append(0)
-            if team1["home_away"] == "home":
+            if team1["homeAway"] == "home":
                 stats_dictionary["home"].append(1)
             else:
                 stats_dictionary["home"].append(0)
             stats_dictionary["points"].append(team1["points"])
-            stats_dictionary["school"].append(team1["school"])
+            stats_dictionary["team"].append(team1["team"])
         if team_cur == team2:
             if team2["points"] > team1["points"]:
                 stats_dictionary["winner"].append(1)
             else:
                 stats_dictionary["winner"].append(0)
-            if team2["home_away"] == "home":
+            if team2["homeAway"] == "home":
                 stats_dictionary["home"].append(1)
             else:
                 stats_dictionary["home"].append(0)
             stats_dictionary["points"].append(team2["points"])
-            stats_dictionary["school"].append(team2["school"])
+            stats_dictionary["team"].append(team2["team"])
         cur_team = team_cur["stats"]
         for stat_update in stat_keys:
             update_val = 0
@@ -103,6 +103,24 @@ def get_team_stats(teams, stats_dictionary):
                         else:
                             update_val = int(val1) / int(val2)
             stats_dictionary[stat_update].append(update_val)
+    return stats_dictionary
+
+
+def process_stats(stat_dict):
+    if ("-" in stat_dict) & (stat_dict[0] != "-"):
+        if len(stat_dict.split("-")) != 2:
+            val1, val2 = 0, 0
+        else:
+            val1, val2 = stat_dict.split("-")
+        if (int(val1) == 0) | (int(val2) == 0):
+            return 0
+        else:
+            return int(val1) / int(val2)
+    else:
+        try:
+            return float(stat_dict)
+        except ValueError:
+            return 0
 
 
 # pbar = tqdm(total=len(range(2023,2024))*len(range(1,17)), desc = "Processing CFB Games")

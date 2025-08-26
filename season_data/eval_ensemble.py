@@ -84,13 +84,12 @@ week_files = [f for f in week_files if ".csv" in f]
 
 ensemble_models = ["svm", "lr", "lda"]
 
-all_models = ['gradientboost', 'knn', 'lda', 'lr',
-              'nusvm', 'rf', 'svm']
+all_models = ["gradientboost", "knn", "lda", "lr", "nusvm", "rf", "svm"]
 
 permutations_of_3 = [list(comb) for comb in itertools.combinations(all_models, 3)]
 indexed_perms = {index: comb for index, comb in enumerate(permutations_of_3)}
 
-with open('all_permutations.json', 'w') as f:
+with open("all_permutations.json", "w") as f:
     json.dump(indexed_perms, f, indent=4)
 
 for file in week_files:
@@ -141,7 +140,7 @@ for file in week_files:
             if ep == row["TRUE_WINNER"]:
                 ensemble_counter += 1
         model_perf[f"ensemble_{idx}"] = (ensemble_counter / len(df)) * 100
-#        df[f"ensemble_prediction_{idx}"] = ensemble_prediction
+        #        df[f"ensemble_prediction_{idx}"] = ensemble_prediction
 
         with open(f"performance_{saver}.txt", "w") as f:
             json.dump(model_perf, f, indent=4)

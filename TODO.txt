@@ -1,0 +1,5 @@
+Still need to:
+Streamline everything and provide docs
+Re-integrate moneyline information for potential winnings
+
+

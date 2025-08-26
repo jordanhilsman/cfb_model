@@ -7,21 +7,24 @@ import argparse
 from datetime import datetime
 from tqdm import tqdm
 
-configuration = cfbd.Configuration()
-configuration.api_key["Authorization"] = os.getenv("CFBD_API_KEY")
-configuration.api_key_prefix["Authorization"] = "Bearer"
+# configuration = cfbd.Configuration()
+# configuration.api_key["Authorization"] = os.getenv("CFBD_API_KEY")
+configuration = cfbd.Configuration(access_token=os.environ["CFBD_API_KEY"])
+# configuration.api_key_prefix["Authorization"] = "Bearer"
 api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
 betting_api = cfbd.BettingApi(cfbd.ApiClient(configuration))
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--week", type=int, required=True)
     return parser.parse_args()
 
+
 args = parse_args()
 week_of_choice = args.week
 
-games = api_instance.get_games(year=2024, week=week_of_choice, division="fbs")
+games = api_instance.get_games(year=2025, week=week_of_choice)
 
 for game in tqdm(games, total=len(games)):
     away_team = game.away_team
@@ -36,7 +39,7 @@ for game in tqdm(games, total=len(games)):
             "--away_team",
             away_team,
             "--year",
-            "2024",
+            "2025",
             "--save",
             "--week",
             f"{week_of_choice}",
@@ -49,7 +52,7 @@ for file in tqdm(os.listdir(f"./game_predictions/week_{week_of_choice}")):
     if "___" in file:
         df = pd.read_csv(f"./game_predictions/week_{week_of_choice}/{file}")
         home_team, away_team, _ = file.split("___")
-        lines = betting_api.get_lines(year=2024, week=week_of_choice, team=home_team)
+        lines = betting_api.get_lines(year=2025, week=week_of_choice, team=home_team)
         print(home_team)
         if (len(lines) == 0) | (lines[0].lines == []):
             hml = 0

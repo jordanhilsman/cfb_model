@@ -39,5 +39,8 @@ Sessionx.vim
 tags
 # Persistent undo
 [._]*.un~
-# End of https://www.toptal.com/developers/gitignore/api/venv,vim
 
+/making_training_data/unprocessed_data/*.csv
+/making_training_data/*.csv
+/season_data/2024/*
+# End of https://www.toptal.com/developers/gitignore/api/venv,vi
