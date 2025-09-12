@@ -1,15 +1,24 @@
 import cfbd
 import os
 
-configuration = cfbd.Configuration()
-configuration.api_key["Authorization"] = os.getenv("CFBD_API_KEY")
-configuration.api_key_prefix["Authorization"] = "Bearer"
+import numpy as np
+
+from sqlalchemy import create_engine, Table, MetaData
+from sqlalchemy.dialects.postgresql import insert
+
+configuration = cfbd.Configuration(access_token=os.environ["CFBD_API_KEY"])
 api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
+
+metadata = MetaData()
+
+engine = create_engine("postgresql+psycopg2://@localhost:5432/cfb_data")
+
+team_stats = Table("team_stats", metadata, autoload_with=engine)
 
 fields_of_interest = ["fourthDownEff", "thirdDownEff", "totalPenaltiesYards", "completionAttempts"]
 
-# 1 if team1 == home, 0 if team2 == home
-# 1 if team1 wins, 0 if team2 wins
+omit_tags = ['possessionTime']
+
 
 KEYS: list = [
     "winner",
@@ -122,27 +131,32 @@ def process_stats(stat_dict):
         except ValueError:
             return 0
 
-
-# pbar = tqdm(total=len(range(2023,2024))*len(range(1,17)), desc = "Processing CFB Games")
-# for yr in range(2023, 2024):
-#    stats_dict_yr = {}
-#    for key in keys:
-#        stats_dict_yr[key] = []
-#    ids_processed = []
-#    for wk in range(1, 17):
-#        games = api_instance.get_team_game_stats(year=yr, week=wk)
-#        for game in games:
-#            if game.id in ids_processed:
-#                continue
-#            else:
-#                ids_processed.append(game.id)
-#                get_team_stats(game.teams, stats_dict_yr)
-#        pbar.update(1)
-#    df = pd.DataFrame.from_dict(stats_dict_yr)
-#    df.to_csv(f'cfb_game_data_{yr}.csv', index=False)
-
-# df = pd.DataFrame.from_dict(stats_dictionary)
-
-# df.to_csv('cfb_stats_2013_2023.csv', index=False)
-
-# print(stats_dictionary)
+def retrieve_game_stats(year, week, team, team_stats, week_to_query):
+    with engine.begin() as conn:
+        stmt = (
+                team_stats.select()
+                .where(team_stats.c.year == year)
+                .where(team_stats.c.week == week)
+                .where(team_stats.c.team == team)
+                )
+        result = conn.execute(stmt).mappings().first()
+        if result:
+            result = {k:np.nan if v is None else v for k, v in result.items()}
+            return result
+        if week_to_query != 1:
+            games = api_instance.get_game_team_stats(year=year, week=week, team=team)
+        else:
+            games = api_instance.get_game_team_stats(year=year-1, week=12, team=team)
+            if not games:
+                games = api_instance.get_game_team_stats(year=year-1, week=11, team=team)
+        if len(games) >= 1:
+            game = games[0]
+            team_stats_only = [tm for tm in game.teams if tm.team == team]
+            result = {stat["category"]:process_stats(stat["stat"]) for stat in team_stats_only[0].to_dict()['stats'] if stat['category'] not in omit_tags}
+            result['team'] = team
+            result['week'] = week
+            result['year'] = year
+            stmt = insert(team_stats).values({k.lower():v for k,v in result.items()})
+            stmt = stmt.on_conflict_do_nothing(index_elements=["year", "week", "team"])
+            conn.execute(stmt)
+            return result

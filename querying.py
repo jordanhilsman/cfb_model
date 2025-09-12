@@ -2,7 +2,12 @@ import cfbd
 import os
 import pandas as pd
 import argparse
-from transform_data import process_stats
+import pickle
+
+from sqlalchemy import create_engine, Table, MetaData
+from sqlalchemy.dialects.postgresql import insert
+
+from transform_data import process_stats, retrieve_game_stats
 
 WKS_PER_YEAR: int = 16
 
@@ -12,6 +17,10 @@ api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
 
 omit_tags = ["possessionTime"]
 
+engine = create_engine("postgresql+psycopg2://@localhost:5432/cfb_data")
+
+metadata = MetaData()
+team_stats = Table("team_stats", metadata, autoload_with=engine)
 
 def parse_args() -> argparse.Namespace:
 
@@ -28,6 +37,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--save", action="store_true", help="To save .csv of results or not")
     parser.add_argument("--week", type=int, default=16)
+    parser.add_argument("--start_time", default=None)
     return parser.parse_args()
 
 
@@ -37,6 +47,9 @@ home_team = args.home_team
 away_team = args.away_team
 yr = args.year
 weeks_to_query = args.week
+
+if args.start_time:
+    start_time = args.start_time
 
 save_name = f"{home_team}___{away_team}___{yr}.csv"
 home_team = home_team.replace("_", " ")
@@ -52,50 +65,46 @@ if args.allow_rematch:
 
 for team in teams:
     for wk in range(0, weeks_to_query):
-        if weeks_to_query != 1:
-            games = api_instance.get_game_team_stats(year=2025, week=wk, team=team)
-        else:
-            games = api_instance.get_game_team_stats(year=2024, week=12, team=team)
-            if not games:
-                games = api_instance.get_game_team_stats(2024, week=11, team=team)
-        if len(games) >= 1:
-            game = games[0]
+        team_game_stats = retrieve_game_stats(yr, wk, team, team_stats, weeks_to_query)
+        if team_game_stats:
             if team == home_team:
-                home_stats = [team for team in game.teams if team.team == home_team]
-                for stat in home_stats[0].to_dict()["stats"]:
-                    if (stat["category"] not in home_dict.keys()) & (
-                        stat["category"] not in omit_tags
-                    ):
-                        home_dict[stat["category"]] = [process_stats(stat["stat"])]
+                for k in team_game_stats.keys():
+                    if k not in home_dict.keys():
+                        home_dict[k] = [team_game_stats[k]]
                     else:
-                        if stat["category"] not in omit_tags:
-                            home_dict[stat["category"]].append(process_stats(stat["stat"]))
-            elif team == away_team:
-                away_stats = [team for team in game.teams if team.team == away_team]
-                for stat in away_stats[0].to_dict()["stats"]:
-                    if (stat["category"] not in away_dict.keys()) & (
-                        stat["category"] not in omit_tags
-                    ):
-                        away_dict[stat["category"]] = [process_stats(stat["stat"])]
+                        home_dict[k].append(team_game_stats[k])
+            if team == away_team:
+                for k in team_game_stats.keys():
+                    if k not in away_dict.keys():
+                        away_dict[k] = [team_game_stats[k]]
                     else:
-                        if stat["category"] not in omit_tags:
-                            away_dict[stat["category"]].append(process_stats(stat["stat"]))
+                        away_dict[k].append(team_game_stats[k])
 
+#home_means = {k: sum(v) / len(v) for k, v in home_dict.items() if v}
+#away_means = {k: sum(v) / len(v) for k, v in away_dict.items() if v}
 
-home_means = {k: sum(v) / len(v) for k, v in home_dict.items() if v}
-away_means = {k: sum(v) / len(v) for k, v in away_dict.items() if v}
+df_home = pd.DataFrame({k.lower():pd.Series(v) for k, v in home_dict.items()})
+df_away = pd.DataFrame({k.lower():pd.Series(v) for k, v in away_dict.items()})
 
+df_home = df_home.drop_duplicates(subset=['firstdowns',  'thirddowneff',  'fourthdowneff',
+                                          'totalyards'])
+df_away = df_away.drop_duplicates(subset=['firstdowns',  'thirddowneff',  'fourthdowneff',
+                                          'totalyards'])
 
-# df_home = pd.DataFrame.from_dict(home_means)
-# df_away = pd.DataFrame.from_dict(away_means)
+df_home.drop(columns=['year', 'team', 'week'], inplace=True)
+df_away.drop(columns=['year', 'team', 'week'], inplace=True)
 
-df_home = pd.DataFrame([home_means])
-df_away = pd.DataFrame([away_means])
+df_home = df_home.mean()
+df_away = df_away.mean()
 
+df_home = df_home.to_frame().T
+df_away = df_away.to_frame().T
 
 df_away.columns = [f"{col}_away" for col in df_away.columns]
 
 df = pd.concat([df_home.reset_index(drop=True), df_away.reset_index(drop=True)], axis=1)
+
+df['start_time'] = start_time
 
 # ensemble_models = ["gradientboost", "lda", "lr"]
 
@@ -125,5 +134,3 @@ if args.save:
     df.to_csv(f"./game_predictions/week_{weeks_to_query}/{save_name}", index=False)
 
 
-# print(f"The probability the Home team ({home_team}) wins is: {home_team_win:2f}%")
-# print(f"The probability the Away Team ({away_team}) wins is: {home_team_lose:2f}%")

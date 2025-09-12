@@ -86,12 +86,21 @@ def parse_args() -> argparse.Namespace:
 
 
 args = parse_args()
+print(f"Getting predictions for {args.week}")
 
 week = f"./game_predictions/week_{args.week}"
 
 files = glob.glob(f"{week}/*.csv")
 
+with open("./models/rf_model.pkl", "rb") as f:
+    model = pickle.load(f)
+
 df = pd.concat((pd.read_csv(f) for f in files), ignore_index=True)
+
+feature_conversion_dict = {feature.lower():feature for feature in model.feature_names_in_}
+
+df = df.rename(columns={k:v for k,v in feature_conversion_dict.items()})
+
 
 all_yards = pd.concat([df["totalYards"], df["totalYards_away"]])
 ranks = all_yards.rank(method="dense", ascending=False).astype(int)
@@ -99,8 +108,9 @@ df["totalYards_rank"] = ranks.iloc[: len(df)].values
 df["totalYards_rank_away"] = ranks.iloc[len(df) :].values
 
 
-with open("./models/lda_model.pkl", "rb") as f:
-    model = pickle.load(f)
+
+df.fillna(0, inplace=True)
+
 
 probs = model.predict_proba(df[FEATURES_ORDER])
 
